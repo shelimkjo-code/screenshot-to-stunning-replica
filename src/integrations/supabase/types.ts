@@ -14,7 +14,110 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      job_photos: {
+        Row: {
+          bg_status: string
+          copies: number
+          created_at: string
+          cutout_path: string | null
+          edits: Json
+          enhance_status: string
+          enhanced_path: string | null
+          error: string | null
+          file_name: string
+          id: string
+          job_id: string
+          original_path: string | null
+          sort_order: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bg_status?: string
+          copies?: number
+          created_at?: string
+          cutout_path?: string | null
+          edits?: Json
+          enhance_status?: string
+          enhanced_path?: string | null
+          error?: string | null
+          file_name?: string
+          id?: string
+          job_id: string
+          original_path?: string | null
+          sort_order?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          bg_status?: string
+          copies?: number
+          created_at?: string
+          cutout_path?: string | null
+          edits?: Json
+          enhance_status?: string
+          enhanced_path?: string | null
+          error?: string | null
+          file_name?: string
+          id?: string
+          job_id?: string
+          original_path?: string | null
+          sort_order?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_photos_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "photo_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photo_jobs: {
+        Row: {
+          created_at: string
+          files_deleted: boolean
+          id: string
+          page_count: number
+          photo_count: number
+          settings: Json
+          title: string
+          total_copies: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          files_deleted?: boolean
+          id?: string
+          page_count?: number
+          photo_count?: number
+          settings?: Json
+          title?: string
+          total_copies?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          files_deleted?: boolean
+          id?: string
+          page_count?: number
+          photo_count?: number
+          settings?: Json
+          title?: string
+          total_copies?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
