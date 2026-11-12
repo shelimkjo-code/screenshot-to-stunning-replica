@@ -196,3 +196,13 @@
 @utility animate-rise {
   animation: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
+
+/* Google sign-in button: Google's branding colours (light theme) */
+@utility btn-google {
+  background-color: #ffffff;
+  color: #1f1f1f;
+  border: 1px solid #747775;
+  font-family: "Google Sans", var(--font-sans);
+  font-weight: 500;
+  &:hover { background-color: #f8faff; }
+}
