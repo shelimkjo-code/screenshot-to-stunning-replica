@@ -173,7 +173,7 @@ export function analyzeSubject(src: CanvasImageSource & { width: number; height:
 
   let headH: number;
   if (neckY > 0) {
-    headH = (neckY - y0) * 0.9;
+    headH = (neckY - y0) * 1.0;
     const ratio = headH / Math.max(1, peak);
     if (ratio < 0.9 || ratio > 1.9) headH = headTop * 1.3;
   } else {
@@ -199,8 +199,8 @@ export interface FrameSpec {
   /** Space above the crown as a fraction of the photo height. */
   crownFrac: number;
 }
-export const PASSPORT_FRAME: FrameSpec = { headFrac: 0.6, crownFrac: 0.1 };
-export const STAMP_FRAME: FrameSpec = { headFrac: 0.56, crownFrac: 0.11 };
+export const PASSPORT_FRAME: FrameSpec = { headFrac: 0.56, crownFrac: 0.1 };
+export const STAMP_FRAME: FrameSpec = { headFrac: 0.53, crownFrac: 0.1 };
 
 export interface RenderOptions {
   source: CanvasImageSource & { width: number; height: number };
