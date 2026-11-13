@@ -257,9 +257,11 @@ export function reprocess(ids: string[], what: "bg" | "enhance") {
     const p = get(id);
     if (!p || running.has(id)) continue;
     if (what === "enhance") {
-      patch(id, { stage: "queued", error: null, enhanceStatus: "pending", enhanced: null, cutout: null, bgStatus: "pending", paths: { ...p.paths, enhanced: undefined, cutout: undefined } as PhotoItem["paths"] });
+      const { enhanced: _e, cutout: _c, ...rest } = p.paths;
+      patch(id, { stage: "queued", error: null, enhanceStatus: "pending", enhanced: null, cutout: null, bgStatus: "pending", paths: rest });
     } else {
-      patch(id, { stage: "queued", error: null, cutout: null, bgStatus: "pending", paths: { ...p.paths, cutout: undefined } as PhotoItem["paths"] });
+      const { cutout: _c, ...rest } = p.paths;
+      patch(id, { stage: "queued", error: null, cutout: null, bgStatus: "pending", paths: rest });
     }
   }
   pump();
