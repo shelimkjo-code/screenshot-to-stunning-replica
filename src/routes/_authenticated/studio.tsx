@@ -19,7 +19,7 @@ import { loadJob } from "@/lib/studio/job-loader";
 import { scheduleSettingsSave } from "@/lib/studio/processor";
 import { useLayout } from "@/lib/studio/use-preview";
 import { useStudio } from "@/lib/studio/store";
-import { getServiceStatus } from "@/server/ai.functions";
+import { getServiceStatus } from "@/lib/ai.functions";
 
 type Search = { job?: string };
 
