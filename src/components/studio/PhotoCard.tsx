@@ -42,7 +42,7 @@ export function PhotoCard({ photo, onEdit, onRemove, onRetry, onCopies }: {
             <div className="absolute inset-x-0 h-1/3 animate-scan bg-gradient-to-b from-transparent via-primary/25 to-transparent" />
           </div>
         )}
-        <div className="absolute left-1.5 top-1.5"><StageBadge stage={photo.stage} /></div>
+        <div className="absolute left-1.5 top-1.5 rounded-full bg-card/95 shadow-sm"><StageBadge stage={photo.stage} /></div>
         {done && (
           <button onClick={onEdit} className="absolute inset-0 grid place-items-center bg-primary-deep/0 opacity-0 transition group-hover:bg-primary-deep/40 group-hover:opacity-100" aria-label={t("edit")}>
             <span className="inline-flex items-center gap-1 rounded-full bg-card px-3 py-1 text-xs font-semibold"><Pencil className="size-3" />{t("edit")}</span>

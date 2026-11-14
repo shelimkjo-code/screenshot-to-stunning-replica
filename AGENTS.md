@@ -28,3 +28,10 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules
+- Photo processing runs client-orchestrated (src/lib/studio/processor.ts) with paid AI calls in authenticated server functions (src/lib/ai.functions.ts); server-only files must not live under a `server/` folder because import protection blocks client imports from it.
+- All print geometry is computed in millimetres by src/lib/studio/layout.ts (tested); rendering converts mm to pixels at 300 DPI only at the last step so PDF/PNG sizes stay exact.
+- Customer photos live in the private `photos` bucket under `{userId}/{jobId}/{photoId}/`; storage RLS keys off the first folder, so keep that path shape.
+- remove.bg reads the `REMOVE_BG_API_KEY` secret; Replicate goes through the Lovable connector gateway. Missing services must surface as "not connected", never as fake success.
+- UI text comes from src/lib/i18n.tsx (Bangla default); add every new string in both languages.

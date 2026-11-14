@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { checkEnhancement, removeBackground, startEnhancement } from "@/server/ai.functions";
+import { checkEnhancement, removeBackground, startEnhancement } from "@/lib/ai.functions";
 import { removeBackgroundLocal } from "./bg-local";
 import { makeWorkingCopy } from "./imaging";
 import { useStudio, type PhotoItem, type Settings } from "./store";
