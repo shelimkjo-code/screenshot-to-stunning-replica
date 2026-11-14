@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as QaStudioRouteImport } from './routes/qa-studio'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedStudioRouteImport } from './routes/_authenticated/studio'
@@ -29,11 +28,6 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QaStudioRoute = QaStudioRouteImport.update({
-  id: '/qa-studio',
-  path: '/qa-studio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -55,7 +49,6 @@ const AuthenticatedStudioRoute = AuthenticatedStudioRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/qa-studio': typeof QaStudioRoute
   '/reset-password': typeof ResetPasswordRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/studio': typeof AuthenticatedStudioRoute
@@ -63,7 +56,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/qa-studio': typeof QaStudioRoute
   '/reset-password': typeof ResetPasswordRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/studio': typeof AuthenticatedStudioRoute
@@ -73,23 +65,20 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/qa-studio': typeof QaStudioRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/studio': typeof AuthenticatedStudioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    '/' | '/auth' | '/qa-studio' | '/reset-password' | '/history' | '/studio'
+  fullPaths: '/' | '/auth' | '/reset-password' | '/history' | '/studio'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/qa-studio' | '/reset-password' | '/history' | '/studio'
+  to: '/' | '/auth' | '/reset-password' | '/history' | '/studio'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
-    | '/qa-studio'
     | '/reset-password'
     | '/_authenticated/history'
     | '/_authenticated/studio'
@@ -99,7 +88,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
-  QaStudioRoute: typeof QaStudioRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
@@ -124,13 +112,6 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/qa-studio': {
-      id: '/qa-studio'
-      path: '/qa-studio'
-      fullPath: '/qa-studio'
-      preLoaderRoute: typeof QaStudioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -174,7 +155,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
-  QaStudioRoute: QaStudioRoute,
   ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
