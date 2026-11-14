@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Copy, Download, Eraser, History, LayoutGrid, Ruler, Sparkles, Upload } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AppHeader } from "@/components/app/AppHeader";
 import { BackgroundPanel } from "@/components/studio/BackgroundPanel";
@@ -74,6 +74,24 @@ function Studio() {
     if (!jobId) return;
     scheduleSettingsSave({ photo_count: photos.length, total_copies: layout.totalCopies, page_count: layout.pageCount });
   }, [jobId, photos.length, layout.totalCopies, layout.pageCount]);
+
+  // When a processing batch finishes, jump straight to the A4 sheet.
+  const busy = photos.some((p) => p.stage !== "done" && p.stage !== "failed");
+  const hasDone = photos.some((p) => p.stage === "done");
+  const wasBusy = useRef(false);
+  useEffect(() => {
+    if (busy) {
+      wasBusy.current = true;
+      return;
+    }
+    if (wasBusy.current && hasDone) {
+      wasBusy.current = false;
+      setEditing(null);
+      setStep("preview");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      toast.success(t("autoToA4"));
+    }
+  }, [busy, hasDone, t]);
 
   const badge = (id: string) => {
     if (id === "upload" && photos.length) return n(photos.length);

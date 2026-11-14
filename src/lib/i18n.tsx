@@ -102,6 +102,7 @@ const en = {
   size: "Size",
   printNote: "Print at Actual Size / 100% Scale. Disable Fit to Page.",
   previewEmpty: "Finished photos will appear on the A4 sheet here.",
+  autoToA4: "All photos are ready — showing them on the A4 sheet.",
   // download
   downloadPdf: "Download A4 PDF",
   downloadPng: "Download A4 PNG",
@@ -253,6 +254,7 @@ const bn: Record<TKey, string> = {
   size: "সাইজ",
   printNote: "Actual Size / 100% স্কেলে প্রিন্ট করুন। Fit to Page বন্ধ রাখুন।",
   previewEmpty: "সম্পন্ন ছবিগুলো এখানে A4 পেজে দেখাবে।",
+  autoToA4: "সব ছবি তৈরি — A4 পেজে দেখানো হচ্ছে।",
   downloadPdf: "A4 PDF ডাউনলোড",
   downloadPng: "A4 PNG ডাউনলোড",
   downloadZip: "সব ছবি ডাউনলোড (ZIP)",
