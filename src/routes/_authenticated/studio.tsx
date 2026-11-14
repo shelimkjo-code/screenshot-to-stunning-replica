@@ -132,7 +132,7 @@ function Studio() {
           {step === "enhance" && <EnhancePanel />}
           {step === "size" && <SizePanel />}
           {step === "copies" && <CopiesPanel />}
-          {step === "preview" && <PreviewPanel />}
+          {step === "preview" && (<div className="grid gap-4"><PreviewPanel /><DownloadPanel /></div>)}
           {step === "download" && <DownloadPanel />}
         </main>
       </div>
