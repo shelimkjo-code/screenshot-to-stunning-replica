@@ -21,6 +21,9 @@ export function BackgroundPanel() {
   ];
   return (
     <Panel title={t("stepBackground")} icon={<Eraser className="size-5" />}>
+      {settings.enhanceMode === "chatgpt" ? (
+        <p className="rounded-lg bg-secondary p-3 text-sm text-secondary-foreground">{t("bgLockedChatgpt")}</p>
+      ) : (
       <div className="grid gap-6">
         <ServiceStatus which="removeBg" />
         <div>
@@ -52,6 +55,7 @@ export function BackgroundPanel() {
           </Button>
         </div>
       </div>
+      )}
     </Panel>
   );
 }
