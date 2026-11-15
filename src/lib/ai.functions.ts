@@ -227,7 +227,7 @@ export const geminiEnhance = createServerFn({ method: "POST" })
       for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
       const dataUrl = `data:${file.type || "image/jpeg"};base64,${btoa(bin)}`;
       const res = await generateChatCompletion({
-        model: "google/gemini-3.1-flash-image",
+        model: "google/gemini-3-pro-image",
         modalities: ["image", "text"],
         messages: [
           {
@@ -242,7 +242,7 @@ export const geminiEnhance = createServerFn({ method: "POST" })
       const msg = (res as unknown as { choices?: { message?: { images?: { image_url?: { url?: string } }[] } }[] }).choices?.[0]?.message;
       const url = msg?.images?.[0]?.image_url?.url;
       if (!url || !url.startsWith("data:")) return { ok: false as const, error: "Gemini returned no image." };
-      const [head, b64] = url.split(",");
+      const [head = "", b64 = ""] = url.split(",");
       const type = head.match(/data:([^;]+)/)?.[1] ?? "image/png";
       const out = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
       const { error: upErr } = await context.supabase.storage
