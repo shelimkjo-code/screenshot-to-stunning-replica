@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { chatgptRestore, checkEnhancement, removeBackground, startEnhancement } from "@/lib/ai.functions";
+import { chatgptRestore, geminiEnhance, checkEnhancement, removeBackground, startEnhancement } from "@/lib/ai.functions";
 import { removeBackgroundLocal } from "./bg-local";
 import { makeWorkingCopy } from "./imaging";
 import { useStudio, type PhotoItem, type Settings } from "./store";
@@ -108,7 +108,7 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function resolveEngine(s: Settings): "removebg" | "local" {
   // ChatGPT already made the background blue; the free built-in cut-out is only used for framing.
-  if (s.enhanceMode === "chatgpt") return "local";
+  if (s.enhanceMode === "chatgpt" || s.enhanceMode === "gemini") return "local";
   const services = useStudio.getState().services;
   if (s.bgEngine === "auto") return services?.removeBg ? "removebg" : "local";
   return s.bgEngine;
@@ -148,9 +148,13 @@ async function processPhoto(id: string) {
   if (p.enhanceStatus !== "done" && p.enhanceStatus !== "off" && p.enhanceStatus !== "not_connected") {
     if (settings.enhanceMode === "off") {
       patch(id, { enhanceStatus: "off" });
-    } else if (settings.enhanceMode === "chatgpt") {
+    } else if (settings.enhanceMode === "chatgpt" || settings.enhanceMode === "gemini") {
       patch(id, { stage: "enhancing", enhanceStatus: "running", progress: 30 });
-      const r = await chatgptRestore({ data: { sourcePath: p.paths.work!, targetPath: `${base}/enhanced.png` } });
+      const args = { sourcePath: p.paths.work!, targetPath: `${base}/enhanced.png` };
+      const r =
+        settings.enhanceMode === "gemini"
+          ? await geminiEnhance({ data: args })
+          : await chatgptRestore({ data: { ...args, bgColor: settings.bgColor } });
       if (!r.ok) {
         patch(id, { enhanceStatus: "failed" });
         throw new StepError(r.error);
