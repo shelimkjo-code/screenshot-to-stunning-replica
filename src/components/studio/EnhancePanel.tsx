@@ -6,7 +6,7 @@ import { useI18n, type TKey } from "@/lib/i18n";
 import type { EnhanceMode } from "@/lib/studio/imaging";
 import { reprocess, scheduleSettingsSave } from "@/lib/studio/processor";
 import { useDonePhotos, usePreviewUrl } from "@/lib/studio/use-preview";
-import { useStudio } from "@/lib/studio/store";
+import { BG_PRESETS, useStudio } from "@/lib/studio/store";
 import { BeforeAfter } from "./BeforeAfter";
 import { Panel, ServiceStatus } from "./common";
 
