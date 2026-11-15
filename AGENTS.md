@@ -35,4 +35,4 @@ use the editor.
 - Customer photos live in the private `photos` bucket under `{userId}/{jobId}/{photoId}/`; storage RLS keys off the first folder, so keep that path shape.
 - remove.bg reads the `REMOVE_BG_API_KEY` secret; Replicate goes through the Lovable connector gateway. Missing services must surface as "not connected", never as fake success.
 - UI text comes from src/lib/i18n.tsx (Bangla default); add every new string in both languages.
-- ChatGPT enhance mode calls the AI Gateway image edit (`chatgptRestore` in src/lib/ai.functions.ts) and forces a blue background; the built-in cut-out still runs afterwards so framing/cropping keeps working.
+- AI enhance modes (`chatgptRestore` restore + user bg color, `geminiEnhance` fixed identity-preserving prompt) live in src/lib/ai.functions.ts; the built-in cut-out still runs afterwards so framing/cropping keeps working.

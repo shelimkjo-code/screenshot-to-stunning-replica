@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { editImage, GatewayError } from "@lovable.dev/ai-gateway";
+import { editImage, generateChatCompletion, GatewayError } from "@lovable.dev/ai-gateway";
 
 const BUCKET = "photos";
 const REPLICATE_GW = "https://connector-gateway.lovable.dev/replicate/v1";
@@ -178,13 +178,42 @@ export const checkEnhancement = createServerFn({ method: "POST" })
     return { status: "succeeded" as const, path: data.targetPath };
   });
 
-const CHATGPT_PROMPT =
-  "Restore this passport photo: remove blur, noise, scratches and fading, keep natural skin tone and lighting. " +
-  "Replace the background with a plain solid even passport blue (#2f6fc9). " +
-  "Do NOT change the face: keep exactly the same person, identity, facial features, expression, eyes, nose, mouth, hair, clothes, head position and framing.";
+const chatgptPrompt = (bg: string) =>
+  `Restore this photo. Replace the background with a plain, solid, even color ${bg}.`;
 
-/** ChatGPT image edit: restore + blue background while keeping the face unchanged. */
-export const chatgptRestore = createServerFn({ method: "POST" })
+const GEMINI_PROMPT = `Professionally enhance and retouch this photo while keeping the original image completely unchanged in appearance and identity.
+
+MOST IMPORTANT INSTRUCTIONS:
+Do NOT change or modify anything in the original photo.
+Preserve the person's exact facial identity, face shape, eyes, nose, lips, skin texture, and natural expressions.
+Do NOT regenerate, reshape, beautify, or alter the face.
+Do NOT change the person's hairstyle, clothing, body shape, or background.
+Maintain the original natural appearance.
+
+ENHANCEMENT TASKS:
+Slightly increase brightness to make the photo look brighter and clearer.
+Improve exposure and lighting naturally.
+Adjust contrast for a balanced and professional appearance.
+Correct white balance and natural colors.
+Improve sharpness and image clarity.
+Reduce image noise while preserving natural skin texture.
+Enhance details and resolution as much as possible.
+Make the overall photo look clean, fresh, bright, and professionally polished.
+
+STRICT RULES:
+No artificial beauty filters.
+No excessive skin smoothing.
+No facial modifications.
+No unrealistic colors or lighting.
+No adding or removing objects.
+No cropping or changing the original composition.
+
+FINAL REQUIREMENT: Keep the original photo and the person's identity exactly the same. Only improve brightness, lighting, clarity, sharpness, and overall image quality.
+
+The result must look like the original photograph taken with a better-quality professional camera, not an AI-generated or altered image.`;
+
+/** Gemini image enhance with the shop's fixed prompt. */
+export const geminiEnhance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { sourcePath: string; targetPath: string }) => input)
   .handler(async ({ data, context }) => {
@@ -193,10 +222,59 @@ export const chatgptRestore = createServerFn({ method: "POST" })
     const { data: file, error: dlErr } = await context.supabase.storage.from(BUCKET).download(data.sourcePath);
     if (dlErr || !file) return { ok: false as const, error: `Could not read photo: ${dlErr?.message ?? "missing"}` };
     try {
+      const buf = new Uint8Array(await file.arrayBuffer());
+      let bin = "";
+      for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+      const dataUrl = `data:${file.type || "image/jpeg"};base64,${btoa(bin)}`;
+      const res = await generateChatCompletion({
+        model: "google/gemini-3-pro-image",
+        modalities: ["image", "text"],
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: GEMINI_PROMPT },
+              { type: "image_url", image_url: { url: dataUrl } },
+            ],
+          },
+        ],
+      } as Parameters<typeof generateChatCompletion>[0]);
+      const msg = (res as unknown as { choices?: { message?: { images?: { image_url?: { url?: string } }[] } }[] }).choices?.[0]?.message;
+      const url = msg?.images?.[0]?.image_url?.url;
+      if (!url || !url.startsWith("data:")) return { ok: false as const, error: "Gemini returned no image." };
+      const [head = "", b64 = ""] = url.split(",");
+      const type = head.match(/data:([^;]+)/)?.[1] ?? "image/png";
+      const out = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const { error: upErr } = await context.supabase.storage
+        .from(BUCKET)
+        .upload(data.targetPath, out, { contentType: type, upsert: true });
+      if (upErr) return { ok: false as const, error: `Could not save result: ${upErr.message}` };
+      return { ok: true as const, path: data.targetPath };
+    } catch (e) {
+      if (e instanceof GatewayError) {
+        console.error("Gemini edit failed", e.code, e.message);
+        const m = e.httpStatus === 402 ? "AI credit finished. Please add credit." : e.httpStatus === 429 ? "Too many requests, try again shortly." : e.message;
+        return { ok: false as const, error: `Gemini: ${m}` };
+      }
+      throw e;
+    }
+  });
+
+/** ChatGPT image edit: restore + blue background while keeping the face unchanged. */
+export const chatgptRestore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { sourcePath: string; targetPath: string; bgColor?: string }) => input)
+  .handler(async ({ data, context }) => {
+    assertOwnPath(data.sourcePath, context.userId);
+    assertOwnPath(data.targetPath, context.userId);
+    const bg = /^#[0-9a-fA-F]{6}$/.test(data.bgColor ?? "") ? data.bgColor! : "#2f6fc9";
+    const { data: file, error: dlErr } = await context.supabase.storage.from(BUCKET).download(data.sourcePath);
+    if (dlErr || !file) return { ok: false as const, error: `Could not read photo: ${dlErr?.message ?? "missing"}` };
+    try {
       const res = await editImage({
         model: "openai/gpt-image-2.5-sunburst",
         image: new File([file], "photo.jpg", { type: file.type || "image/jpeg" }),
-        prompt: CHATGPT_PROMPT,
+        prompt: chatgptPrompt(bg),
         quality: "high",
         output_format: "png",
       });

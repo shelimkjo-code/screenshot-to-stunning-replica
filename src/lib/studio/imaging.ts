@@ -1,6 +1,6 @@
 /** Browser-side image work: framing, adjustments and exact-size rendering. */
 export type Rotation = 0 | 90 | 180 | 270;
-export type EnhanceMode = "off" | "natural" | "standard" | "hq" | "chatgpt";
+export type EnhanceMode = "off" | "natural" | "standard" | "hq" | "chatgpt" | "gemini";
 
 export interface Edits {
   rotation: Rotation;
@@ -272,6 +272,7 @@ const MODE_PARAMS: Record<EnhanceMode, { levels: number; sat: number; sharpen: n
   standard: { levels: 0.55, sat: 1.04, sharpen: 0.45 },
   hq: { levels: 0.65, sat: 1.05, sharpen: 0.55 },
   chatgpt: { levels: 0, sat: 1, sharpen: 0 },
+  gemini: { levels: 0, sat: 1, sharpen: 0 },
 };
 
 /** Natural tone correction: gentle auto-levels, user sliders, unsharp-mask sharpening. */

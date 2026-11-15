@@ -35,6 +35,7 @@ export function EnhancePanel() {
 
   const modes: { id: EnhanceMode; title: TKey; desc: TKey }[] = [
     { id: "chatgpt", title: "modeChatgpt", desc: "modeChatgptDesc" },
+    { id: "gemini", title: "modeGemini", desc: "modeGeminiDesc" },
     { id: "natural", title: "modeNatural", desc: "modeNaturalDesc" },
     { id: "standard", title: "modeStandard", desc: "modeStandardDesc" },
     { id: "hq", title: "modeHq", desc: "modeHqDesc" },
@@ -45,7 +46,7 @@ export function EnhancePanel() {
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="grid content-start gap-5">
           <ServiceStatus which="replicate" />
-          {services && !services.replicate && settings.enhanceMode !== "chatgpt" && (
+          {services && !services.replicate && settings.enhanceMode !== "chatgpt" && settings.enhanceMode !== "gemini" && (
             <p className="rounded-lg bg-secondary p-3 text-sm text-secondary-foreground">{t("enhanceNotConnected")}</p>
           )}
           <div>
@@ -57,7 +58,7 @@ export function EnhancePanel() {
                   onClick={() => {
                     useStudio
                       .getState()
-                      .setSettings(m.id === "chatgpt" ? { enhanceMode: m.id, bgColor: BG_PRESETS.blue } : { enhanceMode: m.id });
+                      .setSettings({ enhanceMode: m.id });
                     scheduleSettingsSave();
                   }}
                   className={cn(
