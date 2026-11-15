@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { editImage, GatewayError } from "@lovable.dev/ai-gateway";
 
 const BUCKET = "photos";
 const REPLICATE_GW = "https://connector-gateway.lovable.dev/replicate/v1";
@@ -175,4 +176,44 @@ export const checkEnhancement = createServerFn({ method: "POST" })
       .upload(data.targetPath, buf, { contentType: img.headers.get("content-type") ?? "image/png", upsert: true });
     if (upErr) return { status: "failed" as const, error: `Could not save result: ${upErr.message}` };
     return { status: "succeeded" as const, path: data.targetPath };
+  });
+
+const CHATGPT_PROMPT =
+  "Restore this passport photo: remove blur, noise, scratches and fading, keep natural skin tone and lighting. " +
+  "Replace the background with a plain solid even passport blue (#2f6fc9). " +
+  "Do NOT change the face: keep exactly the same person, identity, facial features, expression, eyes, nose, mouth, hair, clothes, head position and framing.";
+
+/** ChatGPT image edit: restore + blue background while keeping the face unchanged. */
+export const chatgptRestore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { sourcePath: string; targetPath: string }) => input)
+  .handler(async ({ data, context }) => {
+    assertOwnPath(data.sourcePath, context.userId);
+    assertOwnPath(data.targetPath, context.userId);
+    const { data: file, error: dlErr } = await context.supabase.storage.from(BUCKET).download(data.sourcePath);
+    if (dlErr || !file) return { ok: false as const, error: `Could not read photo: ${dlErr?.message ?? "missing"}` };
+    try {
+      const res = await editImage({
+        model: "openai/gpt-image-2.5-sunburst",
+        image: new File([file], "photo.jpg", { type: file.type || "image/jpeg" }),
+        prompt: CHATGPT_PROMPT,
+        quality: "high",
+        output_format: "png",
+      });
+      const b64 = res.data?.[0]?.b64_json;
+      if (!b64) return { ok: false as const, error: "ChatGPT returned no image." };
+      const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const { error: upErr } = await context.supabase.storage
+        .from(BUCKET)
+        .upload(data.targetPath, bin, { contentType: "image/png", upsert: true });
+      if (upErr) return { ok: false as const, error: `Could not save result: ${upErr.message}` };
+      return { ok: true as const, path: data.targetPath };
+    } catch (e) {
+      if (e instanceof GatewayError) {
+        console.error("ChatGPT edit failed", e.code, e.message);
+        const msg = e.httpStatus === 402 ? "AI credit finished. Please add credit." : e.httpStatus === 429 ? "Too many requests, try again shortly." : e.message;
+        return { ok: false as const, error: `ChatGPT: ${msg}` };
+      }
+      throw e;
+    }
   });

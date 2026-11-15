@@ -34,6 +34,7 @@ export function EnhancePanel() {
   const selected = done.find((p) => p.id === sel) ?? done[0];
 
   const modes: { id: EnhanceMode; title: TKey; desc: TKey }[] = [
+    { id: "chatgpt", title: "modeChatgpt", desc: "modeChatgptDesc" },
     { id: "natural", title: "modeNatural", desc: "modeNaturalDesc" },
     { id: "standard", title: "modeStandard", desc: "modeStandardDesc" },
     { id: "hq", title: "modeHq", desc: "modeHqDesc" },
@@ -44,7 +45,7 @@ export function EnhancePanel() {
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="grid content-start gap-5">
           <ServiceStatus which="replicate" />
-          {services && !services.replicate && (
+          {services && !services.replicate && settings.enhanceMode !== "chatgpt" && (
             <p className="rounded-lg bg-secondary p-3 text-sm text-secondary-foreground">{t("enhanceNotConnected")}</p>
           )}
           <div>
@@ -54,7 +55,9 @@ export function EnhancePanel() {
                 <button
                   key={m.id}
                   onClick={() => {
-                    useStudio.getState().setSettings({ enhanceMode: m.id });
+                    useStudio
+                      .getState()
+                      .setSettings(m.id === "chatgpt" ? { enhanceMode: m.id, bgColor: BG_PRESETS.blue } : { enhanceMode: m.id });
                     scheduleSettingsSave();
                   }}
                   className={cn(
