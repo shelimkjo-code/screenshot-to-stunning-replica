@@ -1,1 +1,59 @@
+name: Build Android APK
 
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # The APK opens the published app, so only the Android shell is built here.
+      - name: Create Android project
+        run: |
+          mkdir -p /tmp/apk && cp capacitor.config.json /tmp/apk/ && cp -r android-shell /tmp/apk/
+          cd /tmp/apk
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/assets@3
+          npx cap add android
+          mkdir -p assets && cp "$GITHUB_WORKSPACE/public/icon-512.png" assets/icon.png
+          npx capacitor-assets generate --android --iconBackgroundColor '#2f6fc9' || true
+          npx cap sync android
+
+      - name: Build APK
+        working-directory: /tmp/apk/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/PhotoStudio.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PhotoStudio-apk
+          path: PhotoStudio.apk
+
+      - name: Publish to Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-${{ github.run_number }}
+          name: Photo Studio APK ${{ github.run_number }}
+          files: PhotoStudio.apk
