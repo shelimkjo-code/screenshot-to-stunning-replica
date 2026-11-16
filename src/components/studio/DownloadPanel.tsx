@@ -1,7 +1,9 @@
-import { Download, FileArchive, FileImage, FileText, Loader2, Printer } from "lucide-react";
+import { MessageCircle, Download, FileArchive, FileImage, FileText, Loader2, Printer } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { sendToWhatsApp, useWhatsApp } from "@/lib/studio/whatsapp";
 import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/lib/i18n";
 import { buildPagePng, buildPdf, buildZip, downloadBlob, photoFileName, printPdf, renderAll } from "@/lib/studio/export";
@@ -52,14 +54,18 @@ export function DownloadPanel() {
   const [busy, setBusy] = useState<string | null>(null);
   const disabled = !done.length || layout.pageCount === 0 || busy !== null;
 
-  async function run(kind: "pdf" | "png" | "zip" | "print") {
+  const wa = useWhatsApp();
+
+  async function run(kind: "pdf" | "png" | "zip" | "print" | "wa") {
+    if (kind === "wa" && !wa.number.trim()) return void toast.error(t("waNeedNumber"));
     setBusy(kind);
     try {
       const canvases = await renderAll(done, settings);
       const name = `${settings.sizePreset}_A4_${stamp()}`;
-      if (kind === "pdf" || kind === "print") {
+      if (kind === "pdf" || kind === "print" || kind === "wa") {
         const pdf = await buildPdf(layout, canvases);
         if (kind === "print") printPdf(pdf);
+        else if (kind === "wa") await sendToWhatsApp(wa.number, new File([pdf], `${name}.pdf`, { type: "application/pdf" }), t("waMessage"), downloadBlob);
         else {
           downloadBlob(pdf, `${name}.pdf`);
           if (settings.autoDelete && jobId && !filesDeleted) {
@@ -98,6 +104,14 @@ export function DownloadPanel() {
           <Button variant="success" size="xl" disabled={disabled} onClick={() => run("print")}>{icon("print", Printer)}{t("print")}</Button>
           <Button variant="outline" size="lg" disabled={disabled} onClick={() => run("png")}>{icon("png", FileImage)}{t("downloadPng")}</Button>
           <Button variant="outline" size="lg" disabled={disabled} onClick={() => run("zip")}>{icon("zip", FileArchive)}{t("downloadZip")}</Button>
+        </div>
+        <div id="whatsapp-send" className="grid gap-2 rounded-xl border p-3">
+          <label className="text-sm font-semibold" htmlFor="wa-number">{t("waNumber")}</label>
+          <div className="flex gap-2">
+            <Input id="wa-number" type="tel" inputMode="tel" placeholder="01XXXXXXXXX" value={wa.number} onChange={(e) => wa.setNumber(e.target.value)} />
+            <Button variant="success" disabled={disabled} onClick={() => run("wa")}>{icon("wa", MessageCircle)}{t("waSend")}</Button>
+          </div>
+          <span className="text-xs text-muted-foreground">{t("waNumberHint")}</span>
         </div>
         <label className="flex items-start gap-3 rounded-xl border p-3">
           <Switch

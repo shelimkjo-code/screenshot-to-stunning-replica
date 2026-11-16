@@ -1,4 +1,6 @@
-import { ImagePlus, Upload } from "lucide-react";
+import { ImagePlus, Upload, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { combineJoint } from "@/lib/studio/joint";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -16,6 +18,17 @@ export function UploadPanel({ onEdit }: { onEdit: (id: string) => void }) {
   const photos = useStudio((s) => s.photos);
   const [drag, setDrag] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const jointInput = useRef<HTMLInputElement>(null);
+
+  async function addJoint(list: FileList) {
+    const files = Array.from(list);
+    if (files.length !== 2) return toast.error(t("jointNeedTwo"));
+    try {
+      addFiles([await combineJoint(files[0]!, files[1]!)]);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
 
   function addFiles(list: FileList | File[]) {
     const files = Array.from(list).filter((f) => ACCEPT.includes(f.type) || /\.(jpe?g|png|webp)$/i.test(f.name));
@@ -71,6 +84,22 @@ export function UploadPanel({ onEdit }: { onEdit: (id: string) => void }) {
           }}
         />
       </label>
+
+      <div className="mt-3 flex flex-col items-center gap-1 text-center">
+        <Button variant="outline" onClick={() => jointInput.current?.click()}><Users />{t("jointBtn")}</Button>
+        <span className="text-xs text-muted-foreground">{t("jointHint")}</span>
+        <input
+          ref={jointInput}
+          type="file"
+          multiple
+          accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+          className="sr-only"
+          onChange={(e) => {
+            if (e.target.files) void addJoint(e.target.files);
+            e.target.value = "";
+          }}
+        />
+      </div>
 
       {photos.length === 0 ? (
         <p className="mt-6 text-center text-sm text-muted-foreground">{t("noPhotos")}</p>
