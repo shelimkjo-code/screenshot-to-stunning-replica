@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Build Android APK
 
 on:
   push:
@@ -6,16 +6,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: pages
+  group: apk
   cancel-in-progress: true
 
 jobs:
-  build:
+  apk:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -24,34 +22,40 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install dependencies
-        run: |
-          rm -f package-lock.json
-          npm cache clean --force
-          npm install --legacy-peer-deps --no-audit --no-fund
-
-      - name: Build
-        run: npm run build
-        env:
-          NITRO_PRESET: github_pages
-
-      - name: Add SPA fallback
-        run: |
-          touch .output/public/.nojekyll
-          if [ ! -f .output/public/404.html ] && [ -f .output/public/index.html ]; then
-            cp .output/public/index.html .output/public/404.html
-          fi
-
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/setup-java@v4
         with:
-          path: .output/public
+          distribution: temurin
+          java-version: 21
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - uses: android-actions/setup-android@v3
+
+      # The APK opens the published app, so only the Android shell is built here.
+      - name: Create Android project
+        run: |
+          mkdir -p /tmp/apk && cp capacitor.config.json /tmp/apk/ && cp -r android-shell /tmp/apk/
+          cd /tmp/apk
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/assets@3
+          npx cap add android
+          mkdir -p assets && cp "$GITHUB_WORKSPACE/public/icon-512.png" assets/icon.png
+          npx capacitor-assets generate --android --iconBackgroundColor '#2f6fc9' || true
+          npx cap sync android
+
+      - name: Build APK
+        working-directory: /tmp/apk/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/PhotoStudio.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PhotoStudio-apk
+          path: PhotoStudio.apk
+
+      - name: Publish to Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-${{ github.run_number }}
+          name: Photo Studio APK ${{ github.run_number }}
+          files: PhotoStudio.apk

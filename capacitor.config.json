@@ -1,0 +1,6 @@
+{
+  "appId": "app.lovable.passportstudio",
+  "appName": "Photo Studio",
+  "webDir": "android-shell",
+  "server": { "url": "https://screenshot-to-stunning-replica.lovable.app", "cleartext": false }
+}

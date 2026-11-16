@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useWhatsApp } from "@/lib/studio/whatsapp";
 import { useServerFn } from "@tanstack/react-start";
 import { Copy, Download, Eraser, History, LayoutGrid, Ruler, Sparkles, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -58,6 +59,8 @@ function Studio() {
   const jobId = useStudio((s) => s.jobId);
   const layout = useLayout();
 
+  useEffect(() => useWhatsApp.getState().load(), []);
+
   useEffect(() => {
     fetchServices()
       .then((s) => useStudio.getState().setServices(s))
@@ -89,7 +92,12 @@ function Studio() {
       setEditing(null);
       setStep("preview");
       window.scrollTo({ top: 0, behavior: "smooth" });
-      toast.success(t("autoToA4"));
+      if (useWhatsApp.getState().number.trim()) {
+        toast.success(t("waReady"), {
+          duration: 15000,
+          action: { label: t("waSend"), onClick: () => document.getElementById("whatsapp-send")?.scrollIntoView({ behavior: "smooth", block: "center" }) },
+        });
+      } else toast.success(t("autoToA4"));
     }
   }, [busy, hasDone, t]);
 

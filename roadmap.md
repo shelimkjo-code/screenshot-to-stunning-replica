@@ -14,3 +14,7 @@
 - [x] Bangla (default) + English
 - [ ] Blocked: remove.bg API key (secret REMOVE_BG_API_KEY) — user must provide
 - [ ] Blocked: Replicate connection — user must connect their account
+- [x] Off-white (#f2f4f8) instead of pure white background
+- [x] WhatsApp number + send A4 PDF on WhatsApp
+- [x] Joint photo from 2 separate photos
+- [x] Auto APK build on GitHub sync + app icons/manifest
