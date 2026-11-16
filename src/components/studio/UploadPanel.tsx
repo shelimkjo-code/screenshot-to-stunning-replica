@@ -22,7 +22,10 @@ export function UploadPanel({ onEdit }: { onEdit: (id: string) => void }) {
 
   async function addJoint(list: FileList) {
     const files = Array.from(list);
-    if (files.length !== 2) return toast.error(t("jointNeedTwo"));
+    if (files.length !== 2) {
+      toast.error(t("jointNeedTwo"));
+      return;
+    }
     try {
       addFiles([await combineJoint(files[0]!, files[1]!)]);
     } catch (e) {
