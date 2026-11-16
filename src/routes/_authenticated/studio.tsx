@@ -59,6 +59,8 @@ function Studio() {
   const jobId = useStudio((s) => s.jobId);
   const layout = useLayout();
 
+  useEffect(() => useWhatsApp.getState().load(), []);
+
   useEffect(() => {
     fetchServices()
       .then((s) => useStudio.getState().setServices(s))

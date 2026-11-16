@@ -36,3 +36,4 @@ use the editor.
 - remove.bg reads the `REMOVE_BG_API_KEY` secret; Replicate goes through the Lovable connector gateway. Missing services must surface as "not connected", never as fake success.
 - UI text comes from src/lib/i18n.tsx (Bangla default); add every new string in both languages.
 - AI enhance modes (`chatgptRestore` restore + user bg color, `geminiEnhance` fixed identity-preserving prompt) live in src/lib/ai.functions.ts; the built-in cut-out still runs afterwards so framing/cropping keeps working.
+- Android APK is a Capacitor shell built by .github/workflows/main.yml that loads the published URL; the app needs its server, so never ship a static bundle in the APK.
