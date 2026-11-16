@@ -44,7 +44,7 @@ export interface Settings {
 export const BG_PRESETS = {
   blue: "#2f6fc9",
   lightBlue: "#a9cdf2",
-  white: "#ffffff",
+  white: "#f2f4f8",
 } as const;
 
 export const DEFAULT_SETTINGS: Settings = {
