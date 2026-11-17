@@ -142,3 +142,52 @@ export function smartCropRect(faces: FaceBox[], imgW: number, imgH: number): Rec
   if (r.w * r.h > imgW * imgH * 0.85) return null;
   return r;
 }
+
+/** Topmost opaque row above a face in a cut-out (the real crown, including hair or head cover). */
+function maskCrown(src: Src, f: FaceBox): number | null {
+  const x0 = Math.max(0, Math.round(f.x + f.w * 0.15));
+  const x1 = Math.min(src.width, Math.round(f.x + f.w * 0.85));
+  const yTop = Math.max(0, Math.round(f.y - f.h * 1.0));
+  const yBot = Math.max(yTop + 1, Math.round(f.y + f.h * 0.1));
+  const w = x1 - x0;
+  const h = yBot - yTop;
+  if (w < 2 || h < 2) return null;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d", { willReadFrequently: true })!;
+  ctx.drawImage(src, x0, yTop, w, h, 0, 0, w, h);
+  const { data } = ctx.getImageData(0, 0, w, h);
+  let transparent = 0;
+  for (let i = 3; i < data.length; i += 4) if (data[i]! < 20) transparent++;
+  if (transparent < w * 2) return null; // opaque image: no mask to read
+  for (let y = 0; y < h; y++) {
+    let solid = 0;
+    for (let x = 0; x < w; x++) if (data[(y * w + x) * 4 + 3]! > 128) solid++;
+    if (solid >= w * 0.25) return yTop + y;
+  }
+  return null;
+}
+
+/** Converts detected faces into the crown / centre / head-height used for passport framing. */
+export function faceAnalysis(src: Src, faces: FaceBox[]): { crownY: number; centerX: number; headH: number; spanW?: number } | null {
+  if (!faces.length) return null;
+  let crown = Infinity;
+  let chin = -Infinity;
+  for (const f of faces) {
+    const est = f.y - f.h * 0.5;
+    const fromMask = maskCrown(src, f);
+    const c = fromMask == null ? est : Math.min(Math.max(fromMask, f.y - f.h * 0.85), f.y - f.h * 0.2);
+    crown = Math.min(crown, c);
+    chin = Math.max(chin, f.y + f.h * 0.92);
+  }
+  const left = Math.min(...faces.map((f) => f.x));
+  const right = Math.max(...faces.map((f) => f.x + f.w));
+  const fh = faces.reduce((s, f) => s + f.h, 0) / faces.length;
+  return {
+    crownY: crown,
+    centerX: (left + right) / 2,
+    headH: chin - crown,
+    spanW: faces.length > 1 ? right - left + fh * 1.1 : undefined,
+  };
+}
