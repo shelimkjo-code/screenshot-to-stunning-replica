@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { scheduleSave, scheduleSettingsSave } from "@/lib/studio/processor";
 import { usePreviewUrl } from "@/lib/studio/use-preview";
-import { useStudio, type PhotoItem } from "@/lib/studio/store";
+import { useStudio, type PhotoItem, photoAspect } from "@/lib/studio/store";
 import { CopiesPicker, Panel, StageBadge } from "./common";
 
 function Row({ p }: { p: PhotoItem }) {
@@ -11,7 +11,7 @@ function Row({ p }: { p: PhotoItem }) {
   const url = usePreviewUrl(p.stage === "done" ? p : undefined, settings, "final", 60);
   return (
     <li className="flex flex-wrap items-center gap-3 py-2.5">
-      <span className="w-10 shrink-0 overflow-hidden rounded border checker" style={{ aspectRatio: `${settings.widthMm}/${settings.heightMm}` }}>
+      <span className="w-10 shrink-0 overflow-hidden rounded border checker" style={{ aspectRatio: photoAspect(p, settings) }}>
         {url && <img src={url} alt="" className="h-full w-full object-cover" />}
       </span>
       <span className="min-w-0 flex-1">

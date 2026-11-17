@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useI18n } from "@/lib/i18n";
 import { usePreviewUrl } from "@/lib/studio/use-preview";
-import { useStudio, type PhotoItem } from "@/lib/studio/store";
+import { useStudio, type PhotoItem, photoAspect } from "@/lib/studio/store";
 import { CopiesPicker, StageBadge } from "./common";
 
 function useObjectUrl(b: Blob | null) {
@@ -33,7 +33,7 @@ export function PhotoCard({ photo, onEdit, onRemove, onRetry, onCopies }: {
   const busy = !done && photo.stage !== "failed" && photo.stage !== "queued";
   return (
     <article className="group flex flex-col overflow-hidden rounded-xl border bg-card shadow-card">
-      <div className="relative checker" style={{ aspectRatio: `${settings.widthMm} / ${settings.heightMm}` }}>
+      <div className="relative checker" style={{ aspectRatio: photoAspect(photo, settings) }}>
         {(finalUrl ?? rawUrl) && (
           <img src={(done ? finalUrl : rawUrl) ?? undefined} alt={photo.fileName} className="absolute inset-0 h-full w-full object-cover" />
         )}

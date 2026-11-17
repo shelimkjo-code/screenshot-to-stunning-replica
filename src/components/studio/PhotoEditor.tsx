@@ -8,7 +8,7 @@ import { useI18n, type TKey } from "@/lib/i18n";
 import { DEFAULT_EDITS, type Edits, type Rotation } from "@/lib/studio/imaging";
 import { reprocess, scheduleSave } from "@/lib/studio/processor";
 import { usePreviewUrl } from "@/lib/studio/use-preview";
-import { useStudio } from "@/lib/studio/store";
+import { useStudio, photoAspect } from "@/lib/studio/store";
 import { BeforeAfter } from "./BeforeAfter";
 import { ColorSwatches } from "./common";
 
@@ -81,7 +81,7 @@ export function PhotoEditor({ id, onClose }: { id: string | null; onClose: () =>
                 <div
                   ref={frame}
                   className="relative mx-auto w-full max-w-[320px] cursor-grab touch-none overflow-hidden rounded-lg border shadow-sheet checker active:cursor-grabbing"
-                  style={{ aspectRatio: `${settings.widthMm} / ${settings.heightMm}` }}
+                  style={{ aspectRatio: photoAspect(photo, settings) }}
                   onPointerDown={onDown}
                   onPointerMove={onMove}
                   onPointerUp={onUp}
