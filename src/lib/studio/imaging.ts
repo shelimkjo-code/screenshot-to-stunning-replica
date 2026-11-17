@@ -32,6 +32,8 @@ export interface SubjectAnalysis {
   crownY: number;
   centerX: number;
   headH: number;
+  /** Width that must stay inside the frame (both people in a joint photo). */
+  spanW?: number;
 }
 
 const bitmapCache = new WeakMap<Blob, Promise<ImageBitmap>>();
@@ -71,13 +73,18 @@ export function rotateSource(src: ImageBitmap | HTMLCanvasElement, rotation: Rot
 }
 
 /** Downscale a large image for processing (keeps aspect ratio). */
-export async function makeWorkingCopy(file: Blob, maxEdge = 2048): Promise<{ blob: Blob; width: number; height: number }> {
-  const bmp = await createImageBitmap(file);
-  const k = Math.min(1, maxEdge / Math.max(bmp.width, bmp.height));
-  const c = makeCanvas(bmp.width * k, bmp.height * k);
+export async function makeWorkingCopy(
+  file: Blob | ImageBitmap,
+  maxEdge = 2048,
+  crop?: { x: number; y: number; w: number; h: number } | null,
+): Promise<{ blob: Blob; width: number; height: number }> {
+  const bmp = file instanceof Blob ? await createImageBitmap(file) : file;
+  const r = crop ?? { x: 0, y: 0, w: bmp.width, h: bmp.height };
+  const k = Math.min(1, maxEdge / Math.max(r.w, r.h));
+  const c = makeCanvas(r.w * k, r.h * k);
   const ctx = ctx2d(c);
   ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(bmp, 0, 0, c.width, c.height);
+  ctx.drawImage(bmp, r.x, r.y, r.w, r.h, 0, 0, c.width, c.height);
   const blob = await canvasToBlob(c, "image/jpeg", 0.95);
   return { blob, width: c.width, height: c.height };
 }
@@ -201,6 +208,7 @@ export interface FrameSpec {
 }
 export const PASSPORT_FRAME: FrameSpec = { headFrac: 0.56, crownFrac: 0.1 };
 export const STAMP_FRAME: FrameSpec = { headFrac: 0.53, crownFrac: 0.1 };
+export const JOINT_FRAME: FrameSpec = { headFrac: 0.5, crownFrac: 0.12 };
 
 export interface RenderOptions {
   source: CanvasImageSource & { width: number; height: number };
@@ -229,6 +237,7 @@ export function renderPhoto(o: RenderOptions): HTMLCanvasElement {
   let dy: number;
   if (o.analysis) {
     k = (o.frame.headFrac * o.outH) / o.analysis.headH;
+    if (o.analysis.spanW) k = Math.min(k, (0.94 * o.outW) / o.analysis.spanW);
     ax = o.analysis.centerX;
     ay = o.analysis.crownY;
     dx = o.outW / 2;
