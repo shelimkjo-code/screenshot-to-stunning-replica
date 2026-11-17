@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { chatgptRestore, geminiEnhance, checkEnhancement, removeBackground, startEnhancement } from "@/lib/ai.functions";
 import { removeBackgroundLocal } from "./bg-local";
+import { detectFaces, mainFaces, smartCropRect } from "./face";
 import { makeWorkingCopy } from "./imaging";
 import { useStudio, type PhotoItem, type Settings } from "./store";
 
@@ -78,7 +79,7 @@ async function saveRow(id: string) {
     bg_status: p.bgStatus,
     error: p.error,
     copies: p.copies,
-    edits: { ...p.edits, workPath: p.paths.work ?? null, lowRes: p.lowRes, bgEngineUsed: p.bgEngineUsed } as never,
+    edits: { ...p.edits, workPath: p.paths.work ?? null, lowRes: p.lowRes, bgEngineUsed: p.bgEngineUsed, kind: p.kind } as never,
     sort_order: p.sortOrder,
   };
   const { error } = await supabase.from("job_photos").upsert(row);
@@ -135,7 +136,16 @@ async function processPhoto(id: string) {
   if (!p.work) {
     const src = p.original ?? (p.paths.original ? await downloadPath(p.paths.original) : null);
     if (!src) throw new StepError("Original photo is missing");
-    const work = await makeWorkingCopy(src);
+    // Face detection first, then crop to head-and-shoulders so the background step sees a clean portrait.
+    const bmp = await createImageBitmap(src);
+    let rect = null;
+    try {
+      const faces = mainFaces(await detectFaces(bmp), p.kind === "joint" ? 2 : 1);
+      rect = smartCropRect(faces, bmp.width, bmp.height);
+    } catch (e) {
+      console.warn("Smart crop skipped", e);
+    }
+    const work = await makeWorkingCopy(bmp, 2048, rect);
     const path = `${base}/work.jpg`;
     await upload(path, work.blob, "image/jpeg");
     patch(id, { work: work.blob, lowRes: Math.max(work.width, work.height) < 1000, paths: { ...get(id)!.paths, work: path } });
