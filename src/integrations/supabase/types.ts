@@ -118,6 +118,24 @@ export type Database = {
         }
         Relationships: []
       }
+      user_settings: {
+        Row: {
+          updated_at: string
+          user_id: string
+          whatsapp_number: string
+        }
+        Insert: {
+          updated_at?: string
+          user_id?: string
+          whatsapp_number?: string
+        }
+        Update: {
+          updated_at?: string
+          user_id?: string
+          whatsapp_number?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
