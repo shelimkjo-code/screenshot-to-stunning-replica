@@ -89,7 +89,14 @@ export function PhotoEditor({ id, onClose }: { id: string | null; onClose: () =>
                 >
                   {url && <img ref={img} src={url} alt="" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full object-cover" />}
                   {/* head-position guide */}
-                  <div className="pointer-events-none absolute inset-x-[18%] top-[10%] h-[60%] rounded-[50%] border border-dashed border-primary-foreground/70" />
+                  {photo.kind === "joint" ? (
+                    <>
+                      <div className="pointer-events-none absolute left-[12%] top-[12%] h-[56%] w-[30%] rounded-[50%] border border-dashed border-primary-foreground/70" />
+                      <div className="pointer-events-none absolute right-[12%] top-[12%] h-[56%] w-[30%] rounded-[50%] border border-dashed border-primary-foreground/70" />
+                    </>
+                  ) : (
+                    <div className="pointer-events-none absolute inset-x-[18%] top-[10%] h-[60%] rounded-[50%] border border-dashed border-primary-foreground/70" />
+                  )}
                 </div>
                 <p className="mt-2 text-center text-xs text-muted-foreground">{t("dragHint")}</p>
               </TabsContent>
