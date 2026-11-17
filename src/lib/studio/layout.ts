@@ -11,8 +11,8 @@ export interface LayoutInput {
   photoHeightMm: number;
   marginMm: number;
   gapMm: number;
-  /** One entry per source photo, in order, with its copy count. */
-  items: { id: string; copies: number }[];
+  /** One entry per source photo, in order, with its copy count. A photo may carry its own size (joint photos). */
+  items: { id: string; copies: number; widthMm?: number; heightMm?: number }[];
   pageWidthMm?: number;
   pageHeightMm?: number;
 }
@@ -71,30 +71,52 @@ export function computeLayout(input: LayoutInput): LayoutResult {
     return { columns, rows, perPage, pageCount: 0, totalCopies, placements: [], pages: [], offsetXMm, offsetYMm, fits: false };
   }
 
+  // Shelf packing: photos fill rows left to right; a row of a different size starts on a new line,
+  // and a row that would cross the bottom margin moves to the next page.
   const placements: PlacedPhoto[] = [];
-  let slot = 0;
+  let page = 0;
+  let y = m;
+  let rowIdx = 0;
+  let col = 0;
+  let rowSize: { w: number; h: number; cols: number; x0: number } | null = null;
   for (const item of input.items) {
+    const iw = item.widthMm ?? w;
+    const ih = item.heightMm ?? h;
+    const cols = fitCount(pageW - 2 * m, iw, g);
+    const fitsH = ih <= pageH - 2 * m + 1e-9;
+    if (cols === 0 || !fitsH) continue;
     const copies = Math.max(0, Math.floor(item.copies));
     for (let c = 0; c < copies; c++) {
-      const page = Math.floor(slot / perPage);
-      const inPage = slot % perPage;
-      const row = Math.floor(inPage / columns);
-      const col = inPage % columns;
+      const sameSize = rowSize && rowSize.w === iw && rowSize.h === ih;
+      if (!rowSize || !sameSize || col >= rowSize.cols) {
+        if (rowSize) {
+          y += rowSize.h + g;
+          rowIdx++;
+        }
+        if (y + ih > pageH - m + 1e-9) {
+          page++;
+          y = m;
+          rowIdx = 0;
+        }
+        const gw = cols * iw + (cols - 1) * g;
+        rowSize = { w: iw, h: ih, cols, x0: (pageW - gw) / 2 };
+        col = 0;
+      }
       placements.push({
         id: item.id,
         copyIndex: c,
         page,
-        row,
+        row: rowIdx,
         col,
-        xMm: round3(offsetXMm + col * (w + g)),
-        yMm: round3(offsetYMm + row * (h + g)),
-        widthMm: w,
-        heightMm: h,
+        xMm: round3(rowSize.x0 + col * (iw + g)),
+        yMm: round3(y),
+        widthMm: iw,
+        heightMm: ih,
       });
-      slot++;
+      col++;
     }
   }
-  const pageCount = Math.ceil(slot / perPage);
+  const pageCount = placements.length ? page + 1 : 0;
   const pages: PlacedPhoto[][] = Array.from({ length: pageCount }, () => []);
   for (const p of placements) pages[p.page]!.push(p);
 
@@ -107,7 +129,9 @@ function round3(n: number) {
 
 export const SIZE_PRESETS = {
   passport: { widthMm: 40, heightMm: 50 },
-  stamp: { widthMm: 25, heightMm: 35 },
+  stamp: { widthMm: 20, heightMm: 25 },
+  /** Two people side by side (landscape). */
+  joint: { widthMm: 50, heightMm: 40 },
 } as const;
 
 export const COPY_OPTIONS = [1, 2, 4, 6, 8, 10] as const;

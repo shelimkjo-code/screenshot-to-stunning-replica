@@ -8,6 +8,13 @@
       "when": 1794458877368,
       "tag": "0000_photo_studio_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794878362510,
+      "tag": "0001_create_user_settings",
+      "breakpoints": true
     }
   ]
 }

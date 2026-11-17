@@ -11,7 +11,7 @@ import { jpegWithDpi } from "@/lib/studio/imaging";
 import { renderFinal } from "@/lib/studio/render-cache";
 import { deleteJobFiles, scheduleSettingsSave } from "@/lib/studio/processor";
 import { useDonePhotos, useLayout, usePreviewUrl } from "@/lib/studio/use-preview";
-import { useStudio, type PhotoItem } from "@/lib/studio/store";
+import { useStudio, type PhotoItem, photoAspect } from "@/lib/studio/store";
 import { Panel } from "./common";
 import { PrintNote } from "./PreviewPanel";
 
@@ -26,7 +26,7 @@ function OneRow({ p, index }: { p: PhotoItem; index: number }) {
   const url = usePreviewUrl(p, settings, "final", 60);
   return (
     <li className="flex items-center gap-3 py-2">
-      <span className="w-9 shrink-0 overflow-hidden rounded border" style={{ aspectRatio: `${settings.widthMm}/${settings.heightMm}` }}>
+      <span className="w-9 shrink-0 overflow-hidden rounded border" style={{ aspectRatio: photoAspect(p, settings) }}>
         {url && <img src={url} alt="" className="h-full w-full object-cover" />}
       </span>
       <span className="min-w-0 flex-1 truncate text-sm">{p.fileName}</span>

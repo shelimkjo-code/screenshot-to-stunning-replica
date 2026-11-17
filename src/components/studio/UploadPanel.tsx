@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import { deletePhotoFiles, pump, retry, scheduleSave } from "@/lib/studio/processor";
 import { forget } from "@/lib/studio/render-cache";
-import { newPhotoItem, useStudio } from "@/lib/studio/store";
+import { newPhotoItem, useStudio, type PhotoKind } from "@/lib/studio/store";
 import { Panel } from "./common";
 import { PhotoCard } from "./PhotoCard";
 
@@ -19,6 +19,7 @@ export function UploadPanel({ onEdit }: { onEdit: (id: string) => void }) {
   const [drag, setDrag] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const jointInput = useRef<HTMLInputElement>(null);
+  const groupInput = useRef<HTMLInputElement>(null);
 
   async function addJoint(list: FileList) {
     const files = Array.from(list);
@@ -27,20 +28,21 @@ export function UploadPanel({ onEdit }: { onEdit: (id: string) => void }) {
       return;
     }
     try {
-      addFiles([await combineJoint(files[0]!, files[1]!)]);
+      addFiles([await combineJoint(files[0]!, files[1]!)], "joint");
+      toast.success(t("jointAdded"));
     } catch (e) {
       toast.error((e as Error).message);
     }
   }
 
-  function addFiles(list: FileList | File[]) {
+  function addFiles(list: FileList | File[], kind: PhotoKind = "single") {
     const files = Array.from(list).filter((f) => ACCEPT.includes(f.type) || /\.(jpe?g|png|webp)$/i.test(f.name));
     const skipped = Array.from(list).length - files.length;
     if (skipped > 0) toast.error(`${skipped} file(s) skipped — only JPG, PNG, WEBP`);
     if (!files.length) return;
     const st = useStudio.getState();
     const start = st.photos.length;
-    st.addPhotos(files.map((f, i) => newPhotoItem(f, st.settings.defaultCopies, start + i)));
+    st.addPhotos(files.map((f, i) => newPhotoItem(f, st.settings.defaultCopies, start + i, kind)));
     pump();
   }
 
@@ -88,8 +90,12 @@ export function UploadPanel({ onEdit }: { onEdit: (id: string) => void }) {
         />
       </label>
 
-      <div className="mt-3 flex flex-col items-center gap-1 text-center">
-        <Button variant="outline" onClick={() => jointInput.current?.click()}><Users />{t("jointBtn")}</Button>
+      <div className="mt-3 grid gap-2 rounded-xl border bg-secondary/40 p-3">
+        <p className="flex items-center gap-2 text-sm font-semibold"><Users className="size-4 text-primary" />{t("jointTitle")}</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Button variant="outline" className="h-auto whitespace-normal py-2" onClick={() => jointInput.current?.click()}>{t("jointBtn")}</Button>
+          <Button variant="outline" className="h-auto whitespace-normal py-2" onClick={() => groupInput.current?.click()}>{t("jointOneBtn")}</Button>
+        </div>
         <span className="text-xs text-muted-foreground">{t("jointHint")}</span>
         <input
           ref={jointInput}
@@ -99,6 +105,20 @@ export function UploadPanel({ onEdit }: { onEdit: (id: string) => void }) {
           className="sr-only"
           onChange={(e) => {
             if (e.target.files) void addJoint(e.target.files);
+            e.target.value = "";
+          }}
+        />
+        <input
+          ref={groupInput}
+          type="file"
+          multiple
+          accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+          className="sr-only"
+          onChange={(e) => {
+            if (e.target.files?.length) {
+              addFiles(e.target.files, "joint");
+              toast.success(t("jointAdded"));
+            }
             e.target.value = "";
           }}
         />

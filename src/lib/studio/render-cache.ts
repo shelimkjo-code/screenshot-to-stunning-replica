@@ -1,5 +1,6 @@
 import {
   analyzeSubject,
+  JOINT_FRAME,
   loadBitmap,
   makeCanvas,
   PASSPORT_FRAME,
@@ -8,8 +9,9 @@ import {
   STAMP_FRAME,
   type SubjectAnalysis,
 } from "./imaging";
+import { detectFaces, faceAnalysis, mainFaces } from "./face";
 import { mmToPx } from "./layout";
-import type { PhotoItem, Settings } from "./store";
+import { photoSize, type PhotoItem, type Settings } from "./store";
 
 interface Prepared {
   source: HTMLCanvasElement;
@@ -30,14 +32,20 @@ export function prepare(p: PhotoItem): Promise<Prepared> | null {
   const value = (async () => {
     const bmp = await loadBitmap(blob);
     const source = rotateSource(bmp, p.edits.rotation);
-    const analysis = p.cutout ? analyzeSubject(source) : null;
+    let analysis: SubjectAnalysis | null = null;
+    if (p.cutout) {
+      // Face detection gives the same head size for every person (saree, hijab, cap...); the mask is the fallback.
+      const faces = mainFaces(await detectFaces(source).catch(() => []), p.kind === "joint" ? 2 : 1);
+      analysis = faceAnalysis(source, faces) ?? analyzeSubject(source);
+    }
     return { source, analysis };
   })();
   prepared.set(p.id, { blob, rotation: p.edits.rotation, value });
   return value;
 }
 
-export function frameFor(s: Settings) {
+export function frameFor(s: Settings, p?: Pick<PhotoItem, "kind">) {
+  if (p?.kind === "joint") return JOINT_FRAME;
   return s.sizePreset === "stamp" ? STAMP_FRAME : PASSPORT_FRAME;
 }
 
@@ -49,12 +57,12 @@ export async function renderFinal(p: PhotoItem, s: Settings, dpi = 300): Promise
   return renderPhoto({
     source,
     analysis,
-    outW: mmToPx(s.widthMm, dpi),
-    outH: mmToPx(s.heightMm, dpi),
+    outW: mmToPx(photoSize(p, s).widthMm, dpi),
+    outH: mmToPx(photoSize(p, s).heightMm, dpi),
     background: p.cutout ? (p.edits.bgColor ?? s.bgColor) : null,
     edits: p.edits,
     mode: s.enhanceMode,
-    frame: frameFor(s),
+    frame: frameFor(s, p),
     adjust: true,
   });
 }
@@ -83,12 +91,12 @@ export async function renderBefore(p: PhotoItem, s: Settings, dpi = 300): Promis
   return renderPhoto({
     source: before,
     analysis,
-    outW: mmToPx(s.widthMm, dpi),
-    outH: mmToPx(s.heightMm, dpi),
+    outW: mmToPx(photoSize(p, s).widthMm, dpi),
+    outH: mmToPx(photoSize(p, s).heightMm, dpi),
     background: null,
     edits: { ...p.edits, brightness: 0, contrast: 0, saturation: 0, sharpness: 0 },
     mode: "off",
-    frame: frameFor(s),
+    frame: frameFor(s, p),
     adjust: false,
   });
 }

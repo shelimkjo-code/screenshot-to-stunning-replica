@@ -1,7 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_EDITS, type Edits } from "./imaging";
+import { SIZE_PRESETS } from "./layout";
 import { downloadPath } from "./processor";
-import { DEFAULT_SETTINGS, useStudio, type PhotoItem, type Settings, type Stage, type StepStatus } from "./store";
+import { DEFAULT_SETTINGS, useStudio, type PhotoItem, type PhotoKind, type Settings, type Stage, type StepStatus } from "./store";
 
 export async function loadJob(jobId: string) {
   const { data: job, error } = await supabase.from("photo_jobs").select("*").eq("id", jobId).single();
@@ -10,8 +11,8 @@ export async function loadJob(jobId: string) {
 
   const photos: PhotoItem[] = await Promise.all(
     (rows ?? []).map(async (r) => {
-      const extra = (r.edits ?? {}) as Partial<Edits> & { workPath?: string | null; lowRes?: boolean; bgEngineUsed?: "removebg" | "local" | null };
-      const { workPath, lowRes, bgEngineUsed, ...editFields } = extra;
+      const extra = (r.edits ?? {}) as Partial<Edits> & { workPath?: string | null; lowRes?: boolean; bgEngineUsed?: "removebg" | "local" | null; kind?: PhotoKind };
+      const { workPath, lowRes, bgEngineUsed, kind, ...editFields } = extra;
       const paths: PhotoItem["paths"] = {};
       if (r.original_path) paths.original = r.original_path;
       if (workPath && !job.files_deleted) paths.work = workPath;
@@ -22,6 +23,7 @@ export async function loadJob(jobId: string) {
       const done = r.status === "done" && cutout;
       const item: PhotoItem = {
         id: r.id,
+        kind: kind === "joint" ? "joint" : "single",
         fileName: r.file_name,
         original: null,
         work,
@@ -49,7 +51,13 @@ export async function loadJob(jobId: string) {
     jobId,
     jobTitle: job.title,
     photos,
-    settings: { ...DEFAULT_SETTINGS, ...((job.settings ?? {}) as Partial<Settings>) },
+    settings: normalizeSettings({ ...DEFAULT_SETTINGS, ...((job.settings ?? {}) as Partial<Settings>) }),
     filesDeleted: job.files_deleted,
   });
+}
+
+/** Older batches saved the previous stamp size; presets always use today's size. */
+function normalizeSettings(s: Settings): Settings {
+  if (s.sizePreset === "stamp" || s.sizePreset === "passport") return { ...s, ...SIZE_PRESETS[s.sizePreset] };
+  return s;
 }

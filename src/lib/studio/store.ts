@@ -6,8 +6,12 @@ export type Stage = "queued" | "uploading" | "enhancing" | "removing_bg" | "fini
 export type StepStatus = "pending" | "running" | "done" | "off" | "not_connected" | "failed";
 export type BgEngine = "auto" | "removebg" | "local";
 
+export type PhotoKind = "single" | "joint";
+
 export interface PhotoItem {
   id: string;
+  /** Joint photos (two people) always print at the joint size. */
+  kind: PhotoKind;
   fileName: string;
   original: Blob | null;
   work: Blob | null;
@@ -104,9 +108,10 @@ export const useStudio = create<StudioState>((set) => ({
   replaceAll: (v) => set(v),
 }));
 
-export function newPhotoItem(file: File, copies: number, sortOrder: number): PhotoItem {
+export function newPhotoItem(file: File, copies: number, sortOrder: number, kind: PhotoKind = "single"): PhotoItem {
   return {
     id: crypto.randomUUID(),
+    kind,
     fileName: file.name,
     original: file,
     work: null,
@@ -130,4 +135,15 @@ export function newPhotoItem(file: File, copies: number, sortOrder: number): Pho
 
 export function frameKey(s: Settings) {
   return `${s.widthMm}x${s.heightMm}|${s.bgColor}|${s.enhanceMode}|${s.sizePreset}`;
+}
+
+/** Physical print size of one photo: joint photos are fixed, others follow the batch size. */
+export function photoSize(p: { kind?: PhotoKind } | undefined, s: Settings): { widthMm: number; heightMm: number } {
+  if (p?.kind === "joint") return SIZE_PRESETS.joint;
+  return { widthMm: s.widthMm, heightMm: s.heightMm };
+}
+
+export function photoAspect(p: { kind?: PhotoKind } | undefined, s: Settings): string {
+  const z = photoSize(p, s);
+  return `${z.widthMm} / ${z.heightMm}`;
 }

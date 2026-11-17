@@ -6,7 +6,7 @@ import { useI18n, type TKey } from "@/lib/i18n";
 import type { EnhanceMode } from "@/lib/studio/imaging";
 import { reprocess, scheduleSettingsSave } from "@/lib/studio/processor";
 import { useDonePhotos, usePreviewUrl } from "@/lib/studio/use-preview";
-import { BG_PRESETS, useStudio } from "@/lib/studio/store";
+import { BG_PRESETS, useStudio, photoAspect } from "@/lib/studio/store";
 import { BeforeAfter } from "./BeforeAfter";
 import { Panel, ServiceStatus } from "./common";
 
@@ -15,7 +15,7 @@ function Thumb({ id, active, onClick }: { id: string; active: boolean; onClick: 
   const settings = useStudio((s) => s.settings);
   const url = usePreviewUrl(photo, settings, "final", 60);
   return (
-    <button onClick={onClick} className={cn("w-14 shrink-0 overflow-hidden rounded-md border-2", active ? "border-primary" : "border-transparent")} style={{ aspectRatio: `${settings.widthMm}/${settings.heightMm}` }}>
+    <button onClick={onClick} className={cn("w-14 shrink-0 overflow-hidden rounded-md border-2", active ? "border-primary" : "border-transparent")} style={{ aspectRatio: photoAspect(photo, settings) }}>
       {url && <img src={url} alt="" className="h-full w-full object-cover" />}
     </button>
   );

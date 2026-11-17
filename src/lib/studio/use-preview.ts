@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { canvasToBlob } from "./imaging";
 import { computeLayout } from "./layout";
 import { renderBefore, renderFinal } from "./render-cache";
-import { frameKey, useStudio, type PhotoItem, type Settings } from "./store";
+import { frameKey, photoSize, useStudio, type PhotoItem, type Settings } from "./store";
 
 const blobIds = new WeakMap<Blob, number>();
 let nextBlobId = 1;
@@ -84,21 +84,27 @@ export function usePreviewUrls(photos: PhotoItem[], s: Settings, dpi = 150) {
 
 export function useDonePhotos() {
   const photos = useStudio((s) => s.photos);
-  return useMemo(() => photos.filter((p) => p.stage === "done" && (p.cutout || p.work)), [photos]);
+  return useMemo(() => donePhotosOf(photos), [photos]);
+}
+
+/** A4 layout for the finished photos: single photos first, then joint photos at their own size. */
+export function layoutFor(done: PhotoItem[], s: Settings) {
+  const ordered = [...done.filter((p) => p.kind !== "joint"), ...done.filter((p) => p.kind === "joint")];
+  return computeLayout({
+    photoWidthMm: s.widthMm,
+    photoHeightMm: s.heightMm,
+    marginMm: s.marginMm,
+    gapMm: s.gapMm,
+    items: ordered.map((p) => ({ id: p.id, copies: p.copies, ...photoSize(p, s) })),
+  });
+}
+
+export function donePhotosOf(photos: PhotoItem[]) {
+  return photos.filter((p) => p.stage === "done" && (p.cutout || p.work));
 }
 
 export function useLayout() {
   const done = useDonePhotos();
   const s = useStudio((st) => st.settings);
-  return useMemo(
-    () =>
-      computeLayout({
-        photoWidthMm: s.widthMm,
-        photoHeightMm: s.heightMm,
-        marginMm: s.marginMm,
-        gapMm: s.gapMm,
-        items: done.map((p) => ({ id: p.id, copies: p.copies })),
-      }),
-    [done, s.widthMm, s.heightMm, s.marginMm, s.gapMm],
-  );
+  return useMemo(() => layoutFor(done, s), [done, s]);
 }
