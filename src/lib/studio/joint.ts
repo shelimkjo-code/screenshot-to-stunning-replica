@@ -1,30 +1,56 @@
-async function load(f: File) {
-  const url = URL.createObjectURL(f);
-  try {
-    const img = new Image();
-    img.src = url;
-    await img.decode();
-    return img;
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+import { detectFaces } from "./face";
+
+function toFile(c: HTMLCanvasElement) {
+  return new Promise<File>((r, j) =>
+    c.toBlob((x) => (x ? r(new File([x], `joint_${Date.now()}.jpg`, { type: "image/jpeg" })) : j(new Error("joint failed"))), "image/jpeg", 0.95),
+  );
 }
 
-/** Places two photos side by side at the same height so the normal cut-out/crop flow treats them as one joint photo. */
+/**
+ * Builds one joint photo from two separate photos: faces are found, both people are scaled to the same
+ * face size and placed side by side at the same height. Falls back to equal-height placement.
+ */
 export async function combineJoint(a: File, b: File): Promise<File> {
-  const [ia, ib] = await Promise.all([load(a), load(b)]);
-  const h = Math.min(2000, Math.max(ia.naturalHeight, ib.naturalHeight));
-  const wa = Math.round((ia.naturalWidth * h) / ia.naturalHeight);
-  const wb = Math.round((ib.naturalWidth * h) / ib.naturalHeight);
+  const [ia, ib] = await Promise.all([createImageBitmap(a), createImageBitmap(b)]);
+  const [fa, fb] = await Promise.all([detectFaces(ia).catch(() => []), detectFaces(ib).catch(() => [])]);
   const c = document.createElement("canvas");
+  const ctx = c.getContext("2d")!;
+  ctx.imageSmoothingQuality = "high";
+
+  if (fa[0] && fb[0]) {
+    const A = fa[0];
+    const B = fb[0];
+    // Common face height in the output, never upscaling the smaller face too much.
+    const T = Math.min(Math.max(A.h, B.h), 2400 / 5.6, Math.min(A.h, B.h) * 1.25);
+    const half = 2.8 * T;
+    c.width = Math.round(half * 2);
+    c.height = Math.round(4.6 * T);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, c.width, c.height);
+    const place = (img: ImageBitmap, f: { x: number; y: number; w: number; h: number }, cx: number, clipX: number) => {
+      const k = T / f.h;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(clipX, 0, half, c.height);
+      ctx.clip();
+      const dx = cx - (f.x + f.w / 2) * k;
+      const dy = 1.2 * T - f.y * k;
+      ctx.drawImage(img, dx, dy, img.width * k, img.height * k);
+      ctx.restore();
+    };
+    place(ia, A, half * 0.55, 0);
+    place(ib, B, half * 1.45, half);
+    return toFile(c);
+  }
+
+  const h = Math.min(2000, Math.max(ia.height, ib.height));
+  const wa = Math.round((ia.width * h) / ia.height);
+  const wb = Math.round((ib.width * h) / ib.height);
   c.width = wa + wb;
   c.height = h;
-  const ctx = c.getContext("2d")!;
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, c.width, c.height);
-  ctx.imageSmoothingQuality = "high";
   ctx.drawImage(ia, 0, 0, wa, h);
   ctx.drawImage(ib, wa, 0, wb, h);
-  const blob = await new Promise<Blob>((r, j) => c.toBlob((x) => (x ? r(x) : j(new Error("joint failed"))), "image/jpeg", 0.95));
-  return new File([blob], `joint_${Date.now()}.jpg`, { type: "image/jpeg" });
+  return toFile(c);
 }
