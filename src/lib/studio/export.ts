@@ -1,7 +1,7 @@
 import { jpegWithDpi, makeCanvas, pngWithDpi } from "./imaging";
 import { A4, mmToPx, PRINT_DPI, type LayoutResult, type PlacedPhoto } from "./layout";
 import { renderFinal } from "./render-cache";
-import type { PhotoItem, Settings } from "./store";
+import { photoSize, type PhotoItem, type Settings } from "./store";
 
 export async function renderAll(photos: PhotoItem[], s: Settings) {
   const out = new Map<string, HTMLCanvasElement>();
@@ -60,7 +60,7 @@ export async function buildZip(photos: PhotoItem[], canvases: Map<string, HTMLCa
 
 export function photoFileName(p: PhotoItem, s: Settings, index: number) {
   const base = p.fileName.replace(/\.[^.]+$/, "").replace(/[^\w\-]+/g, "_").slice(0, 40) || "photo";
-  return `${String(index).padStart(3, "0")}_${base}_${s.widthMm}x${s.heightMm}mm_300dpi.jpg`;
+  return `${String(index).padStart(3, "0")}_${base}_${photoSize(p, s).widthMm}x${photoSize(p, s).heightMm}mm_300dpi.jpg`;
 }
 
 export function downloadBlob(blob: Blob, name: string) {
