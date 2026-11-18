@@ -47,6 +47,7 @@ export function SizePanel() {
             <span className="font-mono text-sm text-muted-foreground">{n(cm(s.widthMm))} × {n(cm(s.heightMm))} cm</span>
           </button>
         </div>
+        <p className="rounded-lg border bg-secondary/50 p-3 text-sm">{t("jointSizeNote")}</p>
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <NumField label={t("widthCm")} value={s.widthMm / 10} step={0.1} min={1} max={20} onChange={(v) => set({ sizePreset: "custom", widthMm: Math.round(v * 10 * 10) / 10 })} />

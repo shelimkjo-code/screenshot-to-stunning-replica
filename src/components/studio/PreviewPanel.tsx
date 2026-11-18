@@ -28,7 +28,7 @@ export function PreviewPanel() {
   useEffect(() => {
     if (page > Math.max(0, layout.pageCount - 1)) setPage(Math.max(0, layout.pageCount - 1));
   }, [layout.pageCount, page]);
-  const label = `${n(settings.widthMm)}×${n(settings.heightMm)} mm`;
+  const label = `${n(settings.widthMm)}×${n(settings.heightMm)} mm` + (done.some((p) => p.kind === "joint") ? ` + ${n(50)}×${n(40)}` : "");
 
   return (
     <Panel title={t("stepPreview")} icon={<LayoutGrid className="size-5" />}>
